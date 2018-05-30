@@ -19,10 +19,7 @@ import org.keycloak.storage.user.UserQueryProvider;
 import org.keycloak.storage.user.UserRegistrationProvider;
 
 
-import java.io.BufferedReader;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -202,7 +199,7 @@ public class FOOBARUserStorageProvider  implements
             };
 
             Runtime rt = Runtime.getRuntime();
-            Process p = rt.exec(cmd);
+            Process p = rt.exec("/home/mbeliveau/GitProjects/Keycloak-Foobar-Federation/src/main/java/org/keycloak/examples/userstorage/foobar/addUser.sh " + username);
 
             InputStreamReader reader = new InputStreamReader(p.getInputStream());
             BufferedReader buf_reader = new BufferedReader(reader);
@@ -210,8 +207,13 @@ public class FOOBARUserStorageProvider  implements
             String line;
             while((line = buf_reader.readLine()) != null)
                 System.out.println(line);
+
+            showOutPut(p);
         }
         catch(java.io.IOException e) {
+            System.out.println(e.getMessage());
+        }
+        catch(java.lang.InterruptedException e) {
             System.out.println(e.getMessage());
         }
 
@@ -301,4 +303,16 @@ public class FOOBARUserStorageProvider  implements
 
     }
 
+
+    private static void showOutPut(Process p) throws java.io.IOException, InterruptedException {
+        p.waitFor();
+        InputStream is = p.getInputStream();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        String s = null;
+        while ((s = reader.readLine()) != null) {
+            System.out.println(s);
+        }
+        is.close();
+
+    }
 }
