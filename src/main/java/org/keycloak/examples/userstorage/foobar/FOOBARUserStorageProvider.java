@@ -43,6 +43,7 @@ public class FOOBARUserStorageProvider  implements
     protected KeycloakSession session;
     protected Properties properties;
     protected ComponentModel model;
+    //map of loaded users in this transaction
     protected Map<String, UserModel> loadedUsers = new HashMap<>();
 
     public FOOBARUserStorageProvider(KeycloakSession session, ComponentModel model, Properties properties){
@@ -50,7 +51,7 @@ public class FOOBARUserStorageProvider  implements
         this.model = model;
         this.properties = properties;
     }
-
+        //invoked by Keycloak login page when a user logs in.
         public UserModel getUserByUsername(String username, RealmModel realm) {
         UserModel adapter = loadedUsers.get(username);
         if (adapter == null) {
@@ -64,21 +65,21 @@ public class FOOBARUserStorageProvider  implements
     }
 
         protected UserModel createAdapter(RealmModel realm, String username) {
-        return new AbstractUserAdapterFederatedStorage(session, realm, model) {
-            @Override
-            public String getUsername() {
+            return new AbstractUserAdapterFederatedStorage(session, realm, model) {
+                @Override
+                public String getUsername() {
                 return username;
             }
 
-            @Override
-            public void setUsername(String username) {
-                String pw = (String)properties.remove(username);
-                if (pw != null) {
-                    properties.put(username, pw);
-                    save();
+                @Override
+                public void setUsername(String username) {
+                    String pw = (String)properties.remove(username);
+                    if (pw != null) {
+                        properties.put(username, pw);
+                        save();
+                    }
                 }
-            }
-        };
+            };
     }
 
     @Override
@@ -189,6 +190,21 @@ public class FOOBARUserStorageProvider  implements
 
     @Override
     public UserModel addUser(RealmModel realm, String username) {
+        try{
+            System.out.println("addUser\n");
+            String[] cmd = {
+                    "/bin/sh",
+                    "-c",
+                    "ipa user-add " + username + " --first=test --last=user"
+            }; 
+            Runtime rt = Runtime.getRuntime();
+
+            Process p = rt.exec(cmd);
+        }
+        catch(java.io.IOException e) {
+            System.out.println(e.getMessage());
+        }
+
         synchronized (properties) {
             properties.setProperty(username, UNSET_PASSWORD);
             save();
@@ -211,17 +227,20 @@ public class FOOBARUserStorageProvider  implements
 
     // CredentialInputValidator methods
 
+    // Checks to see if the password is set for the user
     @Override
     public boolean isConfiguredFor(RealmModel realm, UserModel user, String credentialType) {
         String password = properties.getProperty(user.getUsername());
         return credentialType.equals(CredentialModel.PASSWORD) && password != null;
     }
 
+    //check to see if the credential type is password
     @Override
     public boolean supportsCredentialType(String credentialType) {
         return credentialType.equals(CredentialModel.PASSWORD);
     }
 
+    //responsible for validating passwords.
     @Override
     public boolean isValid(RealmModel realm, UserModel user, CredentialInput input) {
         if (!supportsCredentialType(input.getType()) || !(input instanceof UserCredentialModel)) return false;

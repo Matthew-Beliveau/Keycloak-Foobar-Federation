@@ -1,3 +1,4 @@
 org/keycloak/examples/userstorage/foobar/FOOBARUserStorageProvider$1.class
 org/keycloak/examples/userstorage/foobar/FOOBARUserStorageProvider.class
+org/keycloak/examples/userstorage/foobar/WritableFOOBARUserModelDelegate.class
 org/keycloak/examples/userstorage/foobar/FOOBARUserStorageProviderFactory.class

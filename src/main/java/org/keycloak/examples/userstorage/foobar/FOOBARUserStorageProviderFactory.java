@@ -19,7 +19,7 @@ import java.util.Properties;
 
 public class FOOBARUserStorageProviderFactory  implements UserStorageProviderFactory<FOOBARUserStorageProvider> {
 
-        private static final Logger logger = Logger.getLogger(FOOBARUserStorageProviderFactory.class);
+    private static final Logger logger = Logger.getLogger(FOOBARUserStorageProviderFactory.class);
 
     public static final String PROVIDER_NAME = "foobar";
 
@@ -30,7 +30,7 @@ public class FOOBARUserStorageProviderFactory  implements UserStorageProviderFac
                 .property().name("path")
                 .type(ProviderConfigProperty.STRING_TYPE)
                 .label("Path")
-                .defaultValue("${jboss.server.config.dir}/example-users.properties")
+                .defaultValue("/home/mbeliveau/GitProjects/Keycloak-Foobar-Federation/src/main/resources/users.properties")
                 .helpText("File path to properties file")
                 .add().build();
     }
@@ -47,7 +47,7 @@ public class FOOBARUserStorageProviderFactory  implements UserStorageProviderFac
         fp = EnvUtil.replace(fp);
         File file = new File(fp);
         if (!file.exists()) {
-            throw new ComponentValidationException("user property file does not exist");
+            throw new ComponentValidationException("user property file does not exist ");
         }
     }
 
