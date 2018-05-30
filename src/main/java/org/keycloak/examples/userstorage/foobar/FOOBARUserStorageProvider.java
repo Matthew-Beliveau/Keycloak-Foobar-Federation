@@ -18,8 +18,11 @@ import org.keycloak.storage.user.UserLookupProvider;
 import org.keycloak.storage.user.UserQueryProvider;
 import org.keycloak.storage.user.UserRegistrationProvider;
 
+
+import java.io.BufferedReader;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -196,10 +199,17 @@ public class FOOBARUserStorageProvider  implements
                     "/bin/sh",
                     "-c",
                     "ipa user-add " + username + " --first=test --last=user"
-            }; 
-            Runtime rt = Runtime.getRuntime();
+            };
 
+            Runtime rt = Runtime.getRuntime();
             Process p = rt.exec(cmd);
+
+            InputStreamReader reader = new InputStreamReader(p.getInputStream());
+            BufferedReader buf_reader = new BufferedReader(reader);
+
+            String line;
+            while((line = buf_reader.readLine()) != null)
+                System.out.println(line);
         }
         catch(java.io.IOException e) {
             System.out.println(e.getMessage());
