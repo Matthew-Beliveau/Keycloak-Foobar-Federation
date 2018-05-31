@@ -11,6 +11,7 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserCredentialModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.models.utils.UserModelDelegate;
 import org.keycloak.storage.StorageId;
 import org.keycloak.storage.UserStorageProvider;
 import org.keycloak.storage.adapter.AbstractUserAdapterFederatedStorage;
@@ -30,6 +31,7 @@ import java.util.Properties;
 import java.util.Set;
 
 public class FOOBARUserStorageProvider  implements
+
         UserStorageProvider,
         UserLookupProvider,
         CredentialInputValidator,
@@ -38,7 +40,7 @@ public class FOOBARUserStorageProvider  implements
         UserQueryProvider {
 
 
-     public static final String UNSET_PASSWORD="#$!-UNSET-PASSWORD";
+    public static final String UNSET_PASSWORD="#$!-UNSET-PASSWORD";
 
     protected KeycloakSession session;
     protected Properties properties;
@@ -51,8 +53,11 @@ public class FOOBARUserStorageProvider  implements
         this.model = model;
         this.properties = properties;
     }
+
+    //UserLookupProvider Implementation
+
         //invoked by Keycloak login page when a user logs in.
-        public UserModel getUserByUsername(String username, RealmModel realm) {
+    public UserModel getUserByUsername(String username, RealmModel realm) {
         UserModel adapter = loadedUsers.get(username);
         if (adapter == null) {
             String password = properties.getProperty(username);
@@ -64,22 +69,23 @@ public class FOOBARUserStorageProvider  implements
         return adapter;
     }
 
-        protected UserModel createAdapter(RealmModel realm, String username) {
-            return new AbstractUserAdapterFederatedStorage(session, realm, model) {
-                @Override
-                public String getUsername() {
-                return username;
-            }
-
-                @Override
-                public void setUsername(String username) {
-                    String pw = (String)properties.remove(username);
-                    if (pw != null) {
-                        properties.put(username, pw);
-                        save();
-                    }
+    protected UserModel createAdapter(RealmModel realm, String username) {
+        UserModel local = session.userLocalStorage().getUserByUsername(username, realm);
+        if(local == null){
+            local = session.userLocalStorage().addUser(realm, username);
+            local.setFederationLink(model.getId());
+        }
+        return new UserModelDelegate(local){
+            @Override
+            public void setUsername(String username) {
+                String pw = (String)properties.remove(username);
+                if(pw != null){
+                    properties.put(username, pw);
+                    save();
                 }
-            };
+                super.setUsername(username);
+            }
+        };
     }
 
     @Override
@@ -208,13 +214,9 @@ public class FOOBARUserStorageProvider  implements
             while((line = buf_reader.readLine()) != null)
                 System.out.println(line);
 
-            showOutPut(p);
         }
         catch(java.io.IOException e) {
-            System.out.println(e.getMessage());
-        }
-        catch(java.lang.InterruptedException e) {
-            System.out.println(e.getMessage());
+            throw new RuntimeException(e);
         }
 
         synchronized (properties) {
@@ -226,13 +228,34 @@ public class FOOBARUserStorageProvider  implements
 
     @Override
     public boolean removeUser(RealmModel realm, UserModel user) {
+        try{
+            System.out.println("addUser\n");
+            String[] cmd = {
+                    "/bin/sh",
+                    "-c",
+                    "echo PASSWORD|kinit admin|ipa user-del " + user.getUsername()
+            };
+
+            Runtime rt = Runtime.getRuntime();
+            Process p = rt.exec(cmd);
+
+            InputStreamReader reader = new InputStreamReader(p.getInputStream());
+            BufferedReader buf_reader = new BufferedReader(reader);
+
+            String line;
+            while((line = buf_reader.readLine()) != null)
+                System.out.println(line);
+
+        }
+        catch(java.io.IOException e) {
+            throw new RuntimeException(e);
+        }
         synchronized (properties) {
             if (properties.remove(user.getUsername()) == null) return false;
             save();
             return true;
         }
     }
-
 
 
 
