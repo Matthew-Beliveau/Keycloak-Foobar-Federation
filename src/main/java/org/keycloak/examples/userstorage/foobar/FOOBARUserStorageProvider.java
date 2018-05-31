@@ -195,11 +195,11 @@ public class FOOBARUserStorageProvider  implements
             String[] cmd = {
                     "/bin/sh",
                     "-c",
-                    "ipa user-add " + username + " --first=test --last=user"
+                    "echo PASSWORD|kinit admin|ipa user-add " + username + " --first=test --last=user"
             };
 
             Runtime rt = Runtime.getRuntime();
-            Process p = rt.exec("/home/mbeliveau/GitProjects/Keycloak-Foobar-Federation/src/main/java/org/keycloak/examples/userstorage/foobar/addUser.sh " + username);
+            Process p = rt.exec(cmd);
 
             InputStreamReader reader = new InputStreamReader(p.getInputStream());
             BufferedReader buf_reader = new BufferedReader(reader);
